@@ -1,0 +1,18 @@
+Copyright (c) Klardo GmbH. All rights reserved.
+
+THE DEPLOYMENT FILES IN THIS REPOSITORY
+
+The files in this repository — the Compose stack, the environment template, the
+start script and the documentation — are provided by Klardo GmbH so that
+KlardoIdent can be evaluated and run. You may use, copy and modify them for the
+purpose of evaluating, deploying and operating KlardoIdent, including inside your
+own organisation. They are provided "as is", without warranty of any kind.
+
+THE SOFTWARE THEY RUN
+
+KlardoIdent itself — the container images these files pull — is proprietary
+software of Klardo GmbH and is NOT covered by the paragraph above. Its use is
+governed by your agreement with Klardo GmbH, and the licence terms ship with the
+image. Nothing in this repository grants a licence to KlardoIdent.
+
+Questions: support@klardo-ident.com

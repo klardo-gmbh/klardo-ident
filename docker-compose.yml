@@ -1,0 +1,96 @@
+# KlardoIdent, its admin console and a MongoDB replica set, on one host.
+#
+# Everything configurable lives in .env — `./start.sh` writes one with generated
+# secrets on first run, and the stack refuses to start without the two that must
+# not have a default (JWT_SECRET, ADMIN_PASSWORD).
+#
+# VERSIONS. A version set in .env wins, which is what makes an upgrade a one-line
+# edit. With none set — no .env, or the entry emptied — the fallback is the
+# MOVING MINOR tag this file was published with (e.g. 0.4), so nobody has to look
+# a number up to start: it follows patch releases, which never break, and stops
+# at the minor boundary, which under 0.x is where a breaking change is allowed.
+# `git pull` here moves the whole quick start to a newer minor when there is one.
+services:
+  # A SINGLE-NODE REPLICA SET, not a plain mongod: KlardoIdent uses transactions,
+  # and MongoDB only offers them on a replica set. The healthcheck initiates the
+  # set on first start and reports status on every start after that, so the
+  # server waits for a database that can actually serve it.
+  mongodb:
+    image: mongo:7
+    container_name: kident-mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - >-
+          try { rs.status().ok }
+          catch (e) {
+            rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok
+          }
+      interval: 5s
+      timeout: 30s
+      retries: 12
+      start_period: 5s
+
+  # The authorization server. The on-prem image is the whole product in one
+  # binary: OAuth 2.0 / OIDC, the login and account pages, and the admin JSON API
+  # the console below talks to.
+  kident:
+    image: docker.io/klardo/ident:${IDENT_VERSION:-0.4}
+    container_name: kident
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "${IDENT_PORT:-8080}:8080"
+    environment:
+      # directConnection=true because the replica set advertises itself as
+      # localhost:27017, which is correct inside the mongodb container and
+      # unreachable from this one; the flag says "talk to the host I named".
+      MONGO_URI: mongodb://mongodb:27017/${MONGO_DB_NAME:-kident}?replicaSet=rs0&directConnection=true
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-kident}
+      # The PUBLIC URL. It becomes the `iss` of every token, so it must be what
+      # clients and browsers actually reach — not the container's address.
+      SERVER_URL: ${SERVER_URL:-http://localhost:8080}
+      PORT: "8080"
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env — run ./start.sh to generate one}
+      # Read on FIRST START only, to create the master realm and its admin.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env — run ./start.sh to generate one}
+      ADMIN_CLIENT_SECRET: ${ADMIN_CLIENT_SECRET:-}
+      ACCOUNT_CLIENT_SECRET: ${ACCOUNT_CLIENT_SECRET:-}
+      # The console runs on its own origin and authenticates cross-origin, so
+      # that origin has to be registered on the realm's admin client. This
+      # variable seeds it at realm creation; for a realm that already exists use
+      # `kidentctl admin-origin set`.
+      ADMIN_UI_ORIGIN: ${ADMIN_UI_ORIGIN:-http://localhost:5174}
+      # Empty is the free plan: 1 realm, 2 clients, 10 users, perpetual.
+      LICENSE_KEY: ${LICENSE_KEY:-}
+
+  # The admin console: a static bundle served by nginx, reading the server origin
+  # and default realm from a config.js generated at container start. It talks to
+  # the server FROM THE BROWSER, so SERVER_BASE_URL must be the URL you open in
+  # it, never the internal container name.
+  admin-ui:
+    image: docker.io/klardo/ident-admin-ui:${ADMINUI_VERSION:-0.5}
+    container_name: kident-admin-ui
+    restart: unless-stopped
+    depends_on:
+      - kident
+    ports:
+      - "${ADMIN_UI_PORT:-5174}:8080"
+    environment:
+      SERVER_BASE_URL: ${SERVER_URL:-http://localhost:8080}
+      DEFAULT_REALM: ${DEFAULT_REALM:-master}
+
+volumes:
+  mongo_data:
