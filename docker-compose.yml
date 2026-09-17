@@ -16,7 +16,7 @@ services:
   # set on first start and reports status on every start after that, so the
   # server waits for a database that can actually serve it.
   mongodb:
-    image: mongo:7
+    image: mongo:8.0
     container_name: kident-mongo
     command: ["--replSet", "rs0", "--bind_ip_all"]
     restart: unless-stopped
@@ -42,7 +42,7 @@ services:
   # binary: OAuth 2.0 / OIDC, the login and account pages, and the admin JSON API
   # the console below talks to.
   kident:
-    image: docker.io/klardo/ident:${IDENT_VERSION:-0.4}
+    image: docker.io/klardo/ident:${IDENT_VERSION:-0.5}
     container_name: kident
     restart: unless-stopped
     depends_on:

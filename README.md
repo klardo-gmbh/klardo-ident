@@ -51,7 +51,7 @@ regenerated on every release, so the versions below are always the current ones.
 
 | Component | Image | Version |
 |---|---|---|
-| Authorization server | `klardo/ident` | `0.4.6` |
+| Authorization server | `klardo/ident` | `0.5.0` |
 | Admin console | `klardo/ident-admin-ui` | `0.5.6` |
 
 Both images are `linux/amd64` and `linux/arm64`, and both are signed (cosign
@@ -60,7 +60,7 @@ keyless — see *Verifying the images*).
 You never have to look a version number up. `IDENT_VERSION` and
 `ADMINUI_VERSION` in `.env` start out pinned to the two above; leave either
 **empty** and the stack falls back to that release's **moving minor tag**
-(`0.4` / `0.5`), which picks up new patches on every
+(`0.5` / `0.5`), which picks up new patches on every
 `docker compose pull` and never crosses into a minor that is allowed to break.
 `git pull` in this repository is how the pins move to a newer minor.
 
@@ -175,10 +175,10 @@ This stack is set up for evaluation on `localhost`. Before it faces anyone else:
 ## Verifying the images
 
 ```bash
-docker buildx imagetools inspect docker.io/klardo/ident:0.4.6 \
+docker buildx imagetools inspect docker.io/klardo/ident:0.5.0 \
   --format '{{.Manifest.Digest}}'
 
-cosign verify docker.io/klardo/ident:0.4.6 \
+cosign verify docker.io/klardo/ident:0.5.0 \
   --certificate-identity-regexp '^https://github.com/klardo-gmbh/identcontrol/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```

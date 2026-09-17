@@ -76,7 +76,7 @@ set -a; . ./.env; set +a
 
 # An empty entry is not an error: compose falls back to the moving minor tag, so
 # say which version is actually about to be pulled rather than printing a blank.
-echo "Pulling images (ident ${IDENT_VERSION:-0.4}, admin UI ${ADMINUI_VERSION:-0.5})..."
+echo "Pulling images (ident ${IDENT_VERSION:-0.5}, admin UI ${ADMINUI_VERSION:-0.5})..."
 docker compose pull --quiet
 
 echo "Starting..."
