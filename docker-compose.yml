@@ -81,7 +81,7 @@ services:
   # the server FROM THE BROWSER, so SERVER_BASE_URL must be the URL you open in
   # it, never the internal container name.
   admin-ui:
-    image: docker.io/klardo/ident-admin-ui:${ADMINUI_VERSION:-0.5}
+    image: docker.io/klardo/ident-admin-ui:${ADMINUI_VERSION:-0.7}
     container_name: kident-admin-ui
     restart: unless-stopped
     depends_on:
