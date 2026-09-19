@@ -51,7 +51,7 @@ regenerated on every release, so the versions below are always the current ones.
 
 | Component | Image | Version |
 |---|---|---|
-| Authorization server | `klardo/ident` | `0.5.1` |
+| Authorization server | `klardo/ident` | `0.5.2` |
 | Admin console | `klardo/ident-admin-ui` | `0.7.0` |
 
 Both images are `linux/amd64` and `linux/arm64`, and both are signed (cosign
@@ -175,10 +175,10 @@ This stack is set up for evaluation on `localhost`. Before it faces anyone else:
 ## Verifying the images
 
 ```bash
-docker buildx imagetools inspect docker.io/klardo/ident:0.5.1 \
+docker buildx imagetools inspect docker.io/klardo/ident:0.5.2 \
   --format '{{.Manifest.Digest}}'
 
-cosign verify docker.io/klardo/ident:0.5.1 \
+cosign verify docker.io/klardo/ident:0.5.2 \
   --certificate-identity-regexp '^https://github.com/klardo-gmbh/identcontrol/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
