@@ -51,7 +51,7 @@ regenerated on every release, so the versions below are always the current ones.
 
 | Component | Image | Version |
 |---|---|---|
-| Authorization server | `klardo/ident` | `0.5.2` |
+| Authorization server | `klardo/ident` | `0.5.3` |
 | Admin console | `klardo/ident-admin-ui` | `0.7.1` |
 
 Both images are `linux/amd64` and `linux/arm64`, and both are signed (cosign
@@ -172,13 +172,65 @@ This stack is set up for evaluation on `localhost`. Before it faces anyone else:
   production identity service to.
 - **Pin by digest** rather than by tag for reproducible rollouts.
 
+## The CLI (kidentctl)
+
+`kidentctl` is a REST client for the admin API: everything the admin console
+does, scriptable. It ships as a plain binary, one per platform, attached to
+this repository's own [GitHub Release for this
+version](https://github.com/klardo-gmbh/klardo-ident/releases/tag/v0.5.3).
+
+**macOS or Linux, with Homebrew:**
+
+```bash
+brew install klardo-gmbh/klardo-ident/kidentctl
+```
+
+That taps `klardo-gmbh/klardo-ident` and installs `kidentctl` in one step; a
+later `brew upgrade kidentctl` picks up the formula's newest release the same
+way. `brew install` builds for Apple Silicon on macOS and for both amd64 and
+arm64 on Linux; there is no Intel Mac build.
+
+**macOS or Linux, without Homebrew:**
+
+```bash
+# linux-amd64 shown; swap for linux-arm64 or darwin-arm64 as needed
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/kident_0.5.3_linux-amd64.tar.gz
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/SHA256SUMS
+sha256sum --ignore-missing -c SHA256SUMS
+tar xzf kident_0.5.3_linux-amd64.tar.gz
+sudo install kident_0.5.3_linux-amd64/kidentctl /usr/local/bin/
+```
+
+**Windows, in PowerShell:**
+
+```powershell
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/kident_0.5.3_windows-amd64.tar.gz" -OutFile kident.tar.gz
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/SHA256SUMS" -OutFile SHA256SUMS
+tar xzf kident.tar.gz   # tar ships with Windows 10 1803+
+```
+
+`kidentctl.exe` is then in `kident_0.5.3_windows-amd64\`; put it
+somewhere on your `PATH`.
+
+Any of the above gets you the same thing:
+
+```bash
+kidentctl configure set --profile default --url https://your-server/realms/master
+kidentctl login --profile default
+```
+
+The tarballs also carry `kident`, the server binary this stack runs as a Docker
+image. You don't need it unless you're building your own image or running
+without Docker, and on Windows there is no supported way to run it at all:
+only `kidentctl.exe` is meant to be used there.
+
 ## Verifying the images
 
 ```bash
-docker buildx imagetools inspect docker.io/klardo/ident:0.5.2 \
+docker buildx imagetools inspect docker.io/klardo/ident:0.5.3 \
   --format '{{.Manifest.Digest}}'
 
-cosign verify docker.io/klardo/ident:0.5.2 \
+cosign verify docker.io/klardo/ident:0.5.3 \
   --certificate-identity-regexp '^https://github.com/klardo-gmbh/identcontrol/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
