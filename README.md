@@ -194,22 +194,22 @@ arm64 on Linux; there is no Intel Mac build.
 
 ```bash
 # linux-amd64 shown; swap for linux-arm64 or darwin-arm64 as needed
-curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/kident_0.5.3_linux-amd64.tar.gz
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/kident_v0.5.3_linux-amd64.tar.gz
 curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/SHA256SUMS
 sha256sum --ignore-missing -c SHA256SUMS
-tar xzf kident_0.5.3_linux-amd64.tar.gz
-sudo install kident_0.5.3_linux-amd64/kidentctl /usr/local/bin/
+tar xzf kident_v0.5.3_linux-amd64.tar.gz
+sudo install kident_v0.5.3_linux-amd64/kidentctl /usr/local/bin/
 ```
 
 **Windows, in PowerShell:**
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/kident_0.5.3_windows-amd64.tar.gz" -OutFile kident.tar.gz
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/kident_v0.5.3_windows-amd64.tar.gz" -OutFile kident.tar.gz
 Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/SHA256SUMS" -OutFile SHA256SUMS
 tar xzf kident.tar.gz   # tar ships with Windows 10 1803+
 ```
 
-`kidentctl.exe` is then in `kident_0.5.3_windows-amd64\`; put it
+`kidentctl.exe` is then in `kident_v0.5.3_windows-amd64\`; put it
 somewhere on your `PATH`.
 
 Any of the above gets you the same thing:
