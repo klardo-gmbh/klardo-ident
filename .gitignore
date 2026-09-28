@@ -1,2 +1,6 @@
 # The generated configuration: it holds this install's only copy of its secrets.
 .env
+
+# Client secrets the init config seed writes out (see README.md, "Provisioning
+# additional realms and clients"): the only copy the install ever hands back.
+secrets/

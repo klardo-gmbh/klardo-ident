@@ -1,4 +1,4 @@
-# KlardoIdent — quick start
+# KlardoIdent: quick start
 
 Run **KlardoIdent** and its **admin console** on one host with Docker Compose,
 in about a minute.
@@ -11,8 +11,8 @@ the tokens they then trust.
 
 Point your apps at it instead of building login into each of them, and you get
 one place that holds the users, one place that decides who may sign in, and one
-set of standard endpoints — `/authorize`, `/token`, `/userinfo`,
-`/.well-known/openid-configuration` — that every OIDC library already speaks. No
+set of standard endpoints, `/authorize`, `/token`, `/userinfo`,
+`/.well-known/openid-configuration`, that every OIDC library already speaks. No
 SDK of ours to adopt: if a framework supports "log in with an OpenID Connect
 provider", it supports this.
 
@@ -23,7 +23,7 @@ What it does:
   refresh tokens, and signed ID tokens and JWKS for verifying them.
 - **Registration, login and account pages**, served by the server and themable
   per realm, so an application does not have to build them.
-- **Many realms in one install.** A realm is a fully isolated world of its own —
+- **Many realms in one install.** A realm is a fully isolated world of its own,
   its own users, its own clients, its own tokens, its own branding. One per
   customer, per environment or per product line; nothing crosses between them.
   Every route is namespaced `/realms/{realm}/…`, and the `master` realm is the
@@ -32,30 +32,30 @@ What it does:
   everything clickable is also scriptable.
 
 What it is built like: a single static Go binary with MongoDB as its only
-dependency — no application server, no plugin runtime, no JVM. It starts in
+dependency, no application server, no plugin runtime, no JVM. It starts in
 under a second, holds the login and token paths to a small, deliberate amount of
 work per request, and is meant to be operated by people who would rather not
 think about their identity provider very often.
 
 **Beta.** KlardoIdent is in beta and versioned `0.x`. It is complete and
-conformant enough to run — that is what this quick start is for — but a minor
+conformant enough to run, that is what this quick start is for, but a minor
 version bump may still contain breaking changes, called out in the release notes.
 Pin an exact version, read the notes before upgrading, and talk to us before
 putting it in front of production traffic.
 
 ## What this repository is
 
-Nothing but the deployment files — a Compose stack, an env template and a start
+Nothing but the deployment files, a Compose stack, an env template and a start
 script. The software itself is the published image, and these files are
 regenerated on every release, so the versions below are always the current ones.
 
 | Component | Image | Version |
 |---|---|---|
-| Authorization server | `klardo/ident` | `0.5.3` |
+| Authorization server | `klardo/ident` | `0.5.4` |
 | Admin console | `klardo/ident-admin-ui` | `0.7.1` |
 
 Both images are `linux/amd64` and `linux/arm64`, and both are signed (cosign
-keyless — see *Verifying the images*).
+keyless, see *Verifying the images*).
 
 You never have to look a version number up. `IDENT_VERSION` and
 `ADMINUI_VERSION` in `.env` start out pinned to the two above; leave either
@@ -67,7 +67,7 @@ You never have to look a version number up. `IDENT_VERSION` and
 ## Requirements
 
 - Docker with the Compose plugin (`docker compose version`).
-- 2 GB of free memory and ports `8080` and `5174` — both overridable in `.env`.
+- 2 GB of free memory and ports `8080` and `5174`, both overridable in `.env`.
 - Nothing else. MongoDB is part of the stack, started as the single-node replica
   set KlardoIdent needs (it uses transactions, which MongoDB only offers on a
   replica set).
@@ -80,8 +80,8 @@ cd klardo-ident
 ./start.sh
 ```
 
-`start.sh` writes a `.env` on first run — with a random `JWT_SECRET`, random
-client secrets and a random admin password — and then starts the stack. It
+`start.sh` writes a `.env` on first run, with a random `JWT_SECRET`, random
+client secrets and a random admin password, and then starts the stack. It
 prints the credentials it generated; they are in `.env` too, and nowhere else.
 
 Already have a `.env`? It is never overwritten. Edit it and re-run `./start.sh`,
@@ -91,13 +91,13 @@ or use `docker compose up -d` directly.
 
 | URL | What it is |
 |---|---|
-| <http://localhost:5174> | the admin console — sign in with the printed credentials |
+| <http://localhost:5174> | the admin console, sign in with the printed credentials |
 | <http://localhost:8080> | the server: OAuth 2.0 / OIDC endpoints |
 | <http://localhost:8080/health> | health check |
 | <http://localhost:8080/realms/master/.well-known/openid-configuration> | discovery document |
 
-Every route is namespaced under its realm — `/realms/{realm}/authorize`,
-`/token`, `/userinfo`, `/.well-known/jwks.json` — and `master` is the admin
+Every route is namespaced under its realm, `/realms/{realm}/authorize`,
+`/token`, `/userinfo`, `/.well-known/jwks.json`, and `master` is the admin
 realm, created on first start from `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
 
 Read the startup banner (`docker compose logs kident`): it prints the resolved
@@ -116,17 +116,66 @@ docker compose down -v       # stop and delete the database volume
 
 An install with no licence runs on the built-in **free plan**, perpetually:
 **1 realm, 2 clients, 10 users**. Nothing expires and nothing has to be
-requested — it is what this stack starts on.
+requested, it is what this stack starts on.
 
 Larger limits and features such as custom branding come with a licence. Set
 `LICENSE_KEY` (or mount a licence file and point `LICENSE_FILE` at it) in
 `.env`; the server picks it up at startup and prints the plan on the banner.
 
-An install that can reach the internet reports **aggregate counts only** — plan,
+An install that can reach the internet reports **aggregate counts only**, plan,
 version, host shape, resource totals. No end-user data, and no realm, client or
 user identifiers. If you need a deployment that makes no outbound connection at
 all, ask us for an air-gapped licence, which carries the exemption; blocking the
 endpoint at your firewall gets you retries and log noise instead.
+
+## Provisioning additional realms and clients
+
+`start.sh` creates only the `master` realm. To have a second realm and its
+first client ready the moment the stack comes up, rather than creating them
+by hand in the console afterward, mount a YAML file and point
+`INIT_CONFIG_FILE` at it:
+
+```yaml
+# realms.yaml
+realms:
+  - name: acme
+    display_name: "Acme Corp"
+    admin_email: admin@acme.example
+    admin_password: "ChangeMe123!"
+    clients:
+      - client_id: acme-app
+        name: "Acme App"
+        redirect_uris: ["https://acme.example/callback"]
+        public: true          # PKCE, no client secret
+      - client_id: acme-service
+        name: "Acme Service"
+        public: false          # confidential; secret written once below
+        secret_out_file: /secrets/acme-service-secret
+```
+
+Then in `docker-compose.yml`, uncomment the `kident` service's `volumes:`
+entries (they already point at `./realms.yaml` and `./secrets`), create the
+directory the secret is written into, and set the path in `.env`:
+
+```bash
+mkdir -p secrets
+echo "INIT_CONFIG_FILE=/config/realms.yaml" >> .env
+```
+
+`secret_out_file` has to name a path inside a **writable** mount of your own,
+as `/secrets` above is. The server runs as a non-root user and the image carries
+no writable directory, so a path anywhere else, `/config` included, cannot be
+written and the container stops on its first start rather than coming up without
+the secret you asked for. A path inside the container with no mount behind it
+would be lost on the next `docker compose up` as well.
+
+`docker compose up -d` again and the realm and clients are created. This runs
+on **every** start and is safe to leave configured: a realm or client that
+already exists (matched by `name` / `client_id`) is left untouched, so a
+restart never duplicates anything. A confidential client's `secret_out_file`
+only ever receives the plaintext secret on the run that actually creates it,
+the server stores only its hash, so that file is the one copy; read it once
+and keep it somewhere else.
 
 ## Upgrading
 
@@ -143,7 +192,7 @@ to a newer minor is deliberate, because under `0.x` a minor may break: `git pull
 here, read the notes, then pull and restart.
 
 Database migrations run automatically at startup, and skipping versions is
-supported — an upgrade from an older release runs every migration in between, in
+supported, an upgrade from an older release runs every migration in between, in
 order, in one start. Take a database backup first regardless.
 
 This is a `0.x` beta line (see *What KlardoIdent is*): a minor bump may contain
@@ -156,8 +205,8 @@ before upgrading.
 This stack is set up for evaluation on `localhost`. Before it faces anyone else:
 
 - **Terminate TLS in front of it** and set `SERVER_URL` to the public HTTPS URL.
-  It becomes the `iss` of every token — the single hardest value to change once
-  clients exist — and a wrong one fails validation at every relying party.
+  It becomes the `iss` of every token, the single hardest value to change once
+  clients exist, and a wrong one fails validation at every relying party.
 - **Set `ENVIRONMENT=production`.** Cookies then require HTTPS, which is why the
   evaluation default is not this.
 - **Set `ADMIN_UI_ORIGIN`** to the console's public origin, and re-run the admin
@@ -177,7 +226,7 @@ This stack is set up for evaluation on `localhost`. Before it faces anyone else:
 `kidentctl` is a REST client for the admin API: everything the admin console
 does, scriptable. It ships as a plain binary, one per platform, attached to
 this repository's own [GitHub Release for this
-version](https://github.com/klardo-gmbh/klardo-ident/releases/tag/v0.5.3).
+version](https://github.com/klardo-gmbh/klardo-ident/releases/tag/v0.5.4).
 
 **macOS or Linux, with Homebrew:**
 
@@ -194,22 +243,22 @@ arm64 on Linux; there is no Intel Mac build.
 
 ```bash
 # linux-amd64 shown; swap for linux-arm64 or darwin-arm64 as needed
-curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/kident_v0.5.3_linux-amd64.tar.gz
-curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/SHA256SUMS
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.4/kident_v0.5.4_linux-amd64.tar.gz
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.4/SHA256SUMS
 sha256sum --ignore-missing -c SHA256SUMS
-tar xzf kident_v0.5.3_linux-amd64.tar.gz
-sudo install kident_v0.5.3_linux-amd64/kidentctl /usr/local/bin/
+tar xzf kident_v0.5.4_linux-amd64.tar.gz
+sudo install kident_v0.5.4_linux-amd64/kidentctl /usr/local/bin/
 ```
 
 **Windows, in PowerShell:**
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/kident_v0.5.3_windows-amd64.tar.gz" -OutFile kident.tar.gz
-Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.3/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.4/kident_v0.5.4_windows-amd64.tar.gz" -OutFile kident.tar.gz
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.4/SHA256SUMS" -OutFile SHA256SUMS
 tar xzf kident.tar.gz   # tar ships with Windows 10 1803+
 ```
 
-`kidentctl.exe` is then in `kident_v0.5.3_windows-amd64\`; put it
+`kidentctl.exe` is then in `kident_v0.5.4_windows-amd64\`; put it
 somewhere on your `PATH`.
 
 Any of the above gets you the same thing:
@@ -227,15 +276,15 @@ only `kidentctl.exe` is meant to be used there.
 ## Verifying the images
 
 ```bash
-docker buildx imagetools inspect docker.io/klardo/ident:0.5.3 \
+docker buildx imagetools inspect docker.io/klardo/ident:0.5.4 \
   --format '{{.Manifest.Digest}}'
 
-cosign verify docker.io/klardo/ident:0.5.3 \
+cosign verify docker.io/klardo/ident:0.5.4 \
   --certificate-identity-regexp '^https://github.com/klardo-gmbh/identcontrol/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-The signing identity is the release workflow in the (private) build repository —
+The signing identity is the release workflow in the (private) build repository,
 the certificate is what you verify against, no repository access needed. The same
 two commands work for `docker.io/klardo/ident-admin-ui:0.7.1`.
 
@@ -247,9 +296,9 @@ with the anonymous quota.
 
 ## Support
 
-- Security issues: **security@klardo-ident.com** — please do not open a public
+- Security issues: **security@klardo-ident.com**, please do not open a public
   issue.
-- Everything else: **support@klardo-ident.com** — include the version you are
+- Everything else: **support@klardo-ident.com**, include the version you are
   running.
 - <https://klardo-ident.com>
 
@@ -260,4 +309,4 @@ deployment files**. The server itself is not developed here.
 
 KlardoIdent is proprietary software of Klardo GmbH; use is governed by your
 agreement with Klardo GmbH. The deployment files in this repository are provided
-for evaluating and running it — see [`LICENSE`](LICENSE).
+for evaluating and running it, see [`LICENSE`](LICENSE).

@@ -1,11 +1,11 @@
 # KlardoIdent, its admin console and a MongoDB replica set, on one host.
 #
-# Everything configurable lives in .env — `./start.sh` writes one with generated
+# Everything configurable lives in .env, `./start.sh` writes one with generated
 # secrets on first run, and the stack refuses to start without the two that must
 # not have a default (JWT_SECRET, ADMIN_PASSWORD).
 #
 # VERSIONS. A version set in .env wins, which is what makes an upgrade a one-line
-# edit. With none set — no .env, or the entry emptied — the fallback is the
+# edit. With none set, no .env, or the entry emptied, the fallback is the
 # MOVING MINOR tag this file was published with (e.g. 0.4), so nobody has to look
 # a number up to start: it follows patch releases, which never break, and stops
 # at the minor boundary, which under 0.x is where a breaking change is allowed.
@@ -57,15 +57,15 @@ services:
       MONGO_URI: mongodb://mongodb:27017/${MONGO_DB_NAME:-kident}?replicaSet=rs0&directConnection=true
       MONGO_DB_NAME: ${MONGO_DB_NAME:-kident}
       # The PUBLIC URL. It becomes the `iss` of every token, so it must be what
-      # clients and browsers actually reach — not the container's address.
+      # clients and browsers actually reach, not the container's address.
       SERVER_URL: ${SERVER_URL:-http://localhost:8080}
       PORT: "8080"
       ENVIRONMENT: ${ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env — run ./start.sh to generate one}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env, run ./start.sh to generate one}
       # Read on FIRST START only, to create the master realm and its admin.
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env — run ./start.sh to generate one}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env, run ./start.sh to generate one}
       ADMIN_CLIENT_SECRET: ${ADMIN_CLIENT_SECRET:-}
       ACCOUNT_CLIENT_SECRET: ${ACCOUNT_CLIENT_SECRET:-}
       # The console runs on its own origin and authenticates cross-origin, so
@@ -75,6 +75,18 @@ services:
       ADMIN_UI_ORIGIN: ${ADMIN_UI_ORIGIN:-http://localhost:5174}
       # Empty is the free plan: 1 realm, 2 clients, 10 users, perpetual.
       LICENSE_KEY: ${LICENSE_KEY:-}
+      # Optional declarative realm/client provisioning, applied on every start
+      # and safe to leave set (existing realms/clients are left as is). Needs
+      # the matching volume mount below - see "Provisioning additional realms
+      # and clients" in README.md.
+      INIT_CONFIG_FILE: ${INIT_CONFIG_FILE:-}
+    # volumes:
+    #   - ./realms.yaml:/config/realms.yaml:ro
+    #   # Writable, for a confidential client's secret_out_file. The server runs
+    #   # as a non-root user, so the target has to be a directory it can write
+    #   # to: create ./secrets yourself (mkdir -p secrets) and point
+    #   # secret_out_file at /secrets/<name>.
+    #   - ./secrets:/secrets
 
   # The admin console: a static bundle served by nginx, reading the server origin
   # and default realm from a config.js generated at container start. It talks to
