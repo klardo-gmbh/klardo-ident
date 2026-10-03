@@ -51,7 +51,7 @@ regenerated on every release, so the versions below are always the current ones.
 
 | Component | Image | Version |
 |---|---|---|
-| Authorization server | `klardo/ident` | `0.5.4` |
+| Authorization server | `klardo/ident` | `0.5.5` |
 | Admin console | `klardo/ident-admin-ui` | `0.7.1` |
 
 Both images are `linux/amd64` and `linux/arm64`, and both are signed (cosign
@@ -146,6 +146,12 @@ realms:
       - client_id: acme-app
         name: "Acme App"
         redirect_uris: ["https://acme.example/callback"]
+        # Where a logout may return the user. Matched exactly, so give the full
+        # URL. Needed when the application lives somewhere other than its
+        # callback: an API on api.acme.example signing users out back to
+        # app.acme.example has no other way to name that address, and leaving it
+        # out means the logout can only return to the callback's own origin.
+        post_logout_redirect_uris: ["https://acme.example/signed-out"]
         public: true          # PKCE, no client secret
       - client_id: acme-service
         name: "Acme Service"
@@ -226,7 +232,7 @@ This stack is set up for evaluation on `localhost`. Before it faces anyone else:
 `kidentctl` is a REST client for the admin API: everything the admin console
 does, scriptable. It ships as a plain binary, one per platform, attached to
 this repository's own [GitHub Release for this
-version](https://github.com/klardo-gmbh/klardo-ident/releases/tag/v0.5.4).
+version](https://github.com/klardo-gmbh/klardo-ident/releases/tag/v0.5.5).
 
 **macOS or Linux, with Homebrew:**
 
@@ -243,22 +249,22 @@ arm64 on Linux; there is no Intel Mac build.
 
 ```bash
 # linux-amd64 shown; swap for linux-arm64 or darwin-arm64 as needed
-curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.4/kident_v0.5.4_linux-amd64.tar.gz
-curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.4/SHA256SUMS
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.5/kident_v0.5.5_linux-amd64.tar.gz
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.5/SHA256SUMS
 sha256sum --ignore-missing -c SHA256SUMS
-tar xzf kident_v0.5.4_linux-amd64.tar.gz
-sudo install kident_v0.5.4_linux-amd64/kidentctl /usr/local/bin/
+tar xzf kident_v0.5.5_linux-amd64.tar.gz
+sudo install kident_v0.5.5_linux-amd64/kidentctl /usr/local/bin/
 ```
 
 **Windows, in PowerShell:**
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.4/kident_v0.5.4_windows-amd64.tar.gz" -OutFile kident.tar.gz
-Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.4/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.5/kident_v0.5.5_windows-amd64.tar.gz" -OutFile kident.tar.gz
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.5/SHA256SUMS" -OutFile SHA256SUMS
 tar xzf kident.tar.gz   # tar ships with Windows 10 1803+
 ```
 
-`kidentctl.exe` is then in `kident_v0.5.4_windows-amd64\`; put it
+`kidentctl.exe` is then in `kident_v0.5.5_windows-amd64\`; put it
 somewhere on your `PATH`.
 
 Any of the above gets you the same thing:
@@ -276,10 +282,10 @@ only `kidentctl.exe` is meant to be used there.
 ## Verifying the images
 
 ```bash
-docker buildx imagetools inspect docker.io/klardo/ident:0.5.4 \
+docker buildx imagetools inspect docker.io/klardo/ident:0.5.5 \
   --format '{{.Manifest.Digest}}'
 
-cosign verify docker.io/klardo/ident:0.5.4 \
+cosign verify docker.io/klardo/ident:0.5.5 \
   --certificate-identity-regexp '^https://github.com/klardo-gmbh/identcontrol/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
