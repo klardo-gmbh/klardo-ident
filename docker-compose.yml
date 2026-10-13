@@ -73,7 +73,7 @@ services:
       # variable seeds it at realm creation; for a realm that already exists use
       # `kidentctl admin-origin set`.
       ADMIN_UI_ORIGIN: ${ADMIN_UI_ORIGIN:-http://localhost:5174}
-      # Empty is the free plan: 1 realm, 2 clients, 10 users, perpetual.
+      # Empty is the free plan: 2 realms, unlimited clients, 80 users, perpetual.
       LICENSE_KEY: ${LICENSE_KEY:-}
       # Optional declarative realm/client provisioning, applied on every start
       # and safe to leave set (existing realms/clients are left as is). Needs
