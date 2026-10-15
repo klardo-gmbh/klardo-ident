@@ -52,7 +52,7 @@ regenerated on every release, so the versions below are always the current ones.
 | Component | Image | Version |
 |---|---|---|
 | Authorization server | `klardo/ident` | `0.5.7` |
-| Admin console | `klardo/ident-admin-ui` | `0.7.2` |
+| Admin console | `klardo/ident-admin-ui` | `0.7.3` |
 
 Both images are `linux/amd64` and `linux/arm64`, and both are signed (cosign
 keyless, see *Verifying the images*).
@@ -372,7 +372,7 @@ cosign verify docker.io/klardo/ident:0.5.7 \
 
 The signing identity is the release workflow in the (private) build repository,
 the certificate is what you verify against, no repository access needed. The same
-two commands work for `docker.io/klardo/ident-admin-ui:0.7.2`.
+two commands work for `docker.io/klardo/ident-admin-ui:0.7.3`.
 
 Both images live on Docker Hub, which needs no account and no registry login to
 pull from. Anonymous pulls are rate-limited per source IP, so an install that
