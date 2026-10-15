@@ -51,7 +51,7 @@ regenerated on every release, so the versions below are always the current ones.
 
 | Component | Image | Version |
 |---|---|---|
-| Authorization server | `klardo/ident` | `0.5.6` |
+| Authorization server | `klardo/ident` | `0.5.7` |
 | Admin console | `klardo/ident-admin-ui` | `0.7.2` |
 
 Both images are `linux/amd64` and `linux/arm64`, and both are signed (cosign
@@ -183,6 +183,86 @@ only ever receives the plaintext secret on the run that actually creates it,
 the server stores only its hash, so that file is the one copy; read it once
 and keep it somewhere else.
 
+## Using it in place of Amazon Cognito
+
+KlardoIdent can stand in for an Amazon Cognito user pool, typically **KlardoIdent
+on a developer's machine and Cognito in production**, with the same application
+code. Two things make that work: a client can issue **Cognito-shaped tokens**,
+and the realm answers on **Cognito's endpoint paths**.
+
+### 1. Create a client on the `cognito` claims profile
+
+In `realms.yaml` (above):
+
+```yaml
+realms:
+  - name: acme
+    display_name: "Acme Corp"
+    admin_email: admin@acme.example
+    admin_password: "ChangeMe123!"
+    allow_user_registration: true      # if the app links to /signup
+    clients:
+      - client_id: acme-web
+        name: "Acme Web"
+        redirect_uris: ["http://localhost:3000/callback"]
+        post_logout_redirect_uris: ["http://localhost:3000/"]   # Cognito's "Allowed sign-out URLs"
+        public: true
+        claims_profile: cognito
+```
+
+or on an existing client with `kidentctl clients update --id <id>
+--claims-profile cognito`, or the **Token Claims Profile** field in the admin
+console.
+
+Tokens issued to that client keep every standard OIDC claim and add the ones
+Cognito applications read:
+
+| Token | Added claims |
+|---|---|
+| access token | `token_use: "access"`, `client_id`, `username`, `cognito:groups`, and `scope` as a space-delimited string |
+| ID token | `token_use: "id"`, `cognito:username`, `cognito:groups`, plus `email`, `email_verified` (with the `email` scope) and `name`, `given_name`, `family_name` (with the `profile` scope) |
+
+`cognito:groups` carries the user's roles. `username` and `cognito:username`
+carry the user's id, which is also `sub`: users sign in with their e-mail
+address, like a Cognito pool configured for e-mail sign-in.
+
+### 2. Point the application at the realm
+
+Make the identity provider settings environment-specific:
+
+| Setting | Production (Cognito) | Local (KlardoIdent) |
+|---|---|---|
+| Issuer | `https://cognito-idp.<region>.amazonaws.com/<pool-id>` | `http://localhost:8080/realms/acme` |
+| OAuth domain | `https://<prefix>.auth.<region>.amazoncognito.com` | `http://localhost:8080/realms/acme` |
+| Client id | the app client's | `acme-web` |
+
+An application that discovers its endpoints from the issuer
+(`/.well-known/openid-configuration`) needs only the issuer. One that builds
+Cognito's paths from the domain works too, because the realm answers on them:
+
+| Cognito path | Answered by |
+|---|---|
+| `/oauth2/authorize`, `/oauth2/token`, `/oauth2/userInfo`, `/oauth2/revoke` | the realm's authorize, token, userinfo and revocation endpoints |
+| `/login`, `/signup`, `/forgotPassword` | the sign-in, registration and forgotten-password pages, with the same query parameters Cognito's hosted UI takes |
+| `/logout?client_id=…&logout_uri=…` | the logout endpoint; `logout_uri` must be one of the client's `post_logout_redirect_uris` |
+
+An API that verifies Cognito access tokens checks `iss`, the JWKS signature,
+`token_use` and `client_id`. All of them are there; only the issuer and the
+JWKS URL (`http://localhost:8080/realms/acme/.well-known/jwks.json`) change.
+
+### What does not carry over
+
+The redirect-based OAuth 2.0 / OpenID Connect flow is covered: any OIDC library
+(oidc-client-ts, openid-client, Spring Security, Auth.js, …). These are not:
+
+- the Cognito user pool API (`InitiateAuth`, `SignUp`, …), and with it the
+  Amplify Auth library, which uses that API even when it signs in by redirect;
+- federation with Google, SAML or other identity providers (`identity_provider`);
+- Lambda triggers and the claims they add, and `custom:` attributes;
+- a new ID token from a refresh: the refresh grant returns a new access token and
+  a **new refresh token** (refresh tokens rotate on every use, so store the one
+  you get back).
+
 ## Upgrading
 
 Versions are pinned in `.env`. Raise them, then:
@@ -232,7 +312,7 @@ This stack is set up for evaluation on `localhost`. Before it faces anyone else:
 `kidentctl` is a REST client for the admin API: everything the admin console
 does, scriptable. It ships as a plain binary, one per platform, attached to
 this repository's own [GitHub Release for this
-version](https://github.com/klardo-gmbh/klardo-ident/releases/tag/v0.5.6).
+version](https://github.com/klardo-gmbh/klardo-ident/releases/tag/v0.5.7).
 
 **macOS or Linux, with Homebrew:**
 
@@ -249,22 +329,22 @@ arm64 on Linux; there is no Intel Mac build.
 
 ```bash
 # linux-amd64 shown; swap for linux-arm64 or darwin-arm64 as needed
-curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.6/kident_v0.5.6_linux-amd64.tar.gz
-curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.6/SHA256SUMS
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.7/kident_v0.5.7_linux-amd64.tar.gz
+curl -fsSLO https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.7/SHA256SUMS
 sha256sum --ignore-missing -c SHA256SUMS
-tar xzf kident_v0.5.6_linux-amd64.tar.gz
-sudo install kident_v0.5.6_linux-amd64/kidentctl /usr/local/bin/
+tar xzf kident_v0.5.7_linux-amd64.tar.gz
+sudo install kident_v0.5.7_linux-amd64/kidentctl /usr/local/bin/
 ```
 
 **Windows, in PowerShell:**
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.6/kident_v0.5.6_windows-amd64.tar.gz" -OutFile kident.tar.gz
-Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.6/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.7/kident_v0.5.7_windows-amd64.tar.gz" -OutFile kident.tar.gz
+Invoke-WebRequest -Uri "https://github.com/klardo-gmbh/klardo-ident/releases/download/v0.5.7/SHA256SUMS" -OutFile SHA256SUMS
 tar xzf kident.tar.gz   # tar ships with Windows 10 1803+
 ```
 
-`kidentctl.exe` is then in `kident_v0.5.6_windows-amd64\`; put it
+`kidentctl.exe` is then in `kident_v0.5.7_windows-amd64\`; put it
 somewhere on your `PATH`.
 
 Any of the above gets you the same thing:
@@ -282,10 +362,10 @@ only `kidentctl.exe` is meant to be used there.
 ## Verifying the images
 
 ```bash
-docker buildx imagetools inspect docker.io/klardo/ident:0.5.6 \
+docker buildx imagetools inspect docker.io/klardo/ident:0.5.7 \
   --format '{{.Manifest.Digest}}'
 
-cosign verify docker.io/klardo/ident:0.5.6 \
+cosign verify docker.io/klardo/ident:0.5.7 \
   --certificate-identity-regexp '^https://github.com/klardo-gmbh/identcontrol/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
